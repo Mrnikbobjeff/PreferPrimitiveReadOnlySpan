@@ -41,10 +41,12 @@ namespace PreferReadOnlySpansOverByteArrays
             var propSyntax = context.Node as FieldDeclarationSyntax;
 
             if(propSyntax.Modifiers.Any(SyntaxKind.StaticKeyword) && propSyntax.Modifiers.Any(SyntaxKind.ReadOnlyKeyword)
+                && (propSyntax.Modifiers.Any(SyntaxKind.InternalKeyword) || propSyntax.Modifiers.Any(SyntaxKind.PrivateKeyword)) //Private or internal as described in ticket
                 && propSyntax.Declaration.Type is ArrayTypeSyntax arrayType //Has to be array property
                 && arrayType.RankSpecifiers.Count == 1 //Has to be empty rank initializer and the only one
                 && arrayType.RankSpecifiers.First().Sizes[0].Kind() == SyntaxKind.OmittedArraySizeExpression
-                && IsPrimitiveTypeArray(context.SemanticModel.GetTypeInfo(arrayType.ElementType).Type))
+                && IsPrimitiveTypeArray(context.SemanticModel.GetTypeInfo(arrayType.ElementType).Type) //has to be 8 byte primitive
+                )
             {
                 var diagnostic = Diagnostic.Create(Rule, propSyntax.GetLocation(), propSyntax);
 

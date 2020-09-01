@@ -35,13 +35,19 @@ namespace PreferReadOnlySpansOverByteArrays
                 return false;
             return validTypes.Contains(elementType.Name);
         }
-
+        static bool HasNoAccessModifiers(SyntaxKind kind)
+        {
+            return kind != SyntaxKind.PrivateKeyword
+                && kind != SyntaxKind.PublicKeyword
+                && kind != SyntaxKind.InternalKeyword
+                && kind != SyntaxKind.ProtectedKeyword;
+        }
         private static void AnalyzeSymbol(SyntaxNodeAnalysisContext context)
         {
             var propSyntax = context.Node as FieldDeclarationSyntax;
 
             if(propSyntax.Modifiers.Any(SyntaxKind.StaticKeyword) && propSyntax.Modifiers.Any(SyntaxKind.ReadOnlyKeyword)
-                && (propSyntax.Modifiers.Any(SyntaxKind.InternalKeyword) || propSyntax.Modifiers.Any(SyntaxKind.PrivateKeyword)) //Private or internal as described in ticket
+                && (propSyntax.Modifiers.Any(SyntaxKind.InternalKeyword) || propSyntax.Modifiers.Any(SyntaxKind.PrivateKeyword) || propSyntax.Modifiers.All(mod => HasNoAccessModifiers(mod.Kind()))) //Private or internal as described in ticket
                 && propSyntax.Declaration.Type is ArrayTypeSyntax arrayType //Has to be array property
                 && arrayType.RankSpecifiers.Count == 1 //Has to be empty rank initializer and the only one
                 && arrayType.RankSpecifiers.First().Sizes[0].Kind() == SyntaxKind.OmittedArraySizeExpression
